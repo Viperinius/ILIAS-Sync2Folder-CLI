@@ -1,0 +1,33 @@
+connection:
+  client: FH-Bielefeld
+  serverURI: https://nbl.fh-bielefeld.de/login.php?target=&amp;soap_pw=&amp;ext_uid=&amp;cookies=nocookies&amp;client_id=FH-Bielefeld&amp;lang=de
+  user: test
+  wsdl: https://nbl.fh-bielefeld.de/webservice/soap/server.php?wsdl
+courses:
+  479495:
+    name: Blah
+  596777:
+    name: Energietechnik
+    sync: true
+  596778:
+    name: HF und EMV
+    sync: true
+localDir:
+  path: X:\Test
+  structureTemplate: '%. Semester ($)'
+  useOwnNames: true
+  useOwnStructure: true
+  useYear: true
+sync:
+  ignoredFiles: {}
+  overwrite: false
+  owIgnore: false
+  showNew: false
+  showOnly: false
+  syncAll: false
+  syncNotification: true
+system:
+  lang: en
+  theme: dark
+  trayicon: true
+  updateCheck: false

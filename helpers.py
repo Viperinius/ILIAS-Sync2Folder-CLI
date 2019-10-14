@@ -35,6 +35,7 @@ class Helpers:
                 return parts2[2]
             else:
                 parts2 = parts[len(parts) - 1].split('S')
+                return parts2[1]
         except:
             return ''
 

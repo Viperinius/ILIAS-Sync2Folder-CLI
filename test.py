@@ -1,19 +1,27 @@
 from iliasHandling import IliasHandling
+from config import Config
 
-handler = IliasHandling()
 
-print("Login...")
-user = input('user: ')
-password = input('pw: ')
+#handler = IliasHandling()
 
-loggedin = handler.iliasLogin(user, password)
+#print("Login...")
+#user = input('user: ')
+#password = input('pw: ')
 
-print(loggedin)
+#loggedin = handler.iliasLogin(user, password)
+#print(loggedin)
 
-handler.getCourseIds()
+#handler.getCourseIds()
 
-handler.getCourseNames()
+#handler.getCourseNames()
 
-loggedout = handler.iliasLogout()
+#handler.getCourseFiles(596778)
 
-print(loggedout)
+#for file in handler.fileList:
+#    handler.createDirectories(file.filePath, 596778, False)
+
+
+
+
+#loggedout = handler.iliasLogout()
+#print(loggedout)

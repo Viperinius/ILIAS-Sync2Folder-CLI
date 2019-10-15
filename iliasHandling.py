@@ -4,12 +4,12 @@ from zeep import Client
 from zeep import xsd
 from pathlib import Path
 from datetime import datetime
-import untangle
 import os
 import time
 import base64
 import gzip
 import io
+import xmltodict
 
 class IliasHandling:
     wsdl = ''
@@ -76,11 +76,11 @@ class IliasHandling:
         if not self.loggedIn:
             return
         
-        xmlUserRoles = untangle.parse(self.client.service.getUserRoles(self.sessionId, self.userId))
+        xmlUserRoles = xmltodict.parse(self.client.service.getUserRoles(self.sessionId, self.userId))
 
         # scan for "Title" tags (contain the roles with the course ids), add course ids to list
-        for obj in xmlUserRoles.Objects.Object:
-            role = obj.Title.cdata
+        for item in xmlUserRoles['Objects']['Object']:
+            role = item['Title']
 
             if (role.startswith('il_crs_member') or role.startswith('il_crs_tutor')):
                 tmp = role.split('_')
@@ -100,8 +100,8 @@ class IliasHandling:
         """
         Retrieve course name from given course id
         """
-        xmlCourse = untangle.parse(self.client.service.getObjectByReference(self.sessionId, int(ref), self.userId))
-        return xmlCourse.Objects.Object.Title.cdata
+        xmlCourse = xmltodict.parse(self.client.service.getObjectByReference(self.sessionId, int(ref), self.userId))
+        return xmlCourse['Objects']['Object']['Title']
 
     def getCourseFiles(self, ref):
         """
@@ -110,10 +110,10 @@ class IliasHandling:
         self.fileList.clear()
 
         # get file tree for course
-        xmlFileTree = untangle.parse(self.client.service.getXMLTree(self.sessionId, int(ref), types=xsd.SkipValue, user_id=self.userId))
+        xmlFileTree = xmltodict.parse(self.client.service.getXMLTree(self.sessionId, int(ref), types=xsd.SkipValue, user_id=self.userId))
 
-        for obj in xmlFileTree.Objects.Object:
-            if obj['type'] == 'file':
+        for item in xmlFileTree['Objects']['Object']:
+            if item['@type'] == 'file':
                 tmpPath = ''
                 tmpPathCrs = ''
                 tmpPathDownwards = ''
@@ -121,36 +121,36 @@ class IliasHandling:
                 currentFile = FileInfo()
 
                 # get file id
-                currentFile.fileId = obj.References['ref_id']
+                currentFile.fileId = item['References']['@ref_id']
 
                 # get file path
-                for element in obj.References.Path.Element:
-                    elementType = element['type']
+                for element in item['References']['Path']['Element']:
+                    elementType = element['@type']
 
                     if elementType == 'crs':
-                        tmpPathCrs = element.cdata
+                        tmpPathCrs = element['#text']
                     elif elementType == 'fold':
-                        tmpPathDownwards = element.cdata
+                        tmpPathDownwards = element['#text']
                         tmpPath = os.path.join(tmpPath, tmpPathDownwards)
                 currentFile.filePath = os.path.join(tmpPathCrs, tmpPath)
 
                 
 
                 # get file size and version
-                for propElement in obj.Properties.Property:
-                    if propElement['name'] == 'fileSize':
-                        currentFile.fileSize = propElement.cdata
-                    if propElement['name'] == 'fileVersion':
-                        currentFile.fileVersion = propElement.cdata
+                for propElement in item['Properties']['Property']:
+                    if propElement['@name'] == 'fileSize':
+                        currentFile.fileSize = propElement['#text']
+                    if propElement['@name'] == 'fileVersion':
+                        currentFile.fileVersion = propElement['#text']
 
                 # get creation date
-                currentFile.fileDate = obj.CreateDate.cdata
+                currentFile.fileDate = item['CreateDate']
 
                 # get last modified date
-                currentFile.fileLastUpdate = obj.LastUpdate.cdata
+                currentFile.fileLastUpdate = item['LastUpdate']
 
                 # get title
-                currentFile.fileName = obj.Title.cdata
+                currentFile.fileName = item['Title']
         
                 self.fileList.append(currentFile)
 
@@ -230,9 +230,15 @@ class IliasHandling:
                 if self.config.getOverwriteAll() and status.startswith('Update available'):
                     size = file.fileSize
 
-                    #self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status, size)
+                    status, size = self.getFileGzipOW(int(file.fileId), file.filePath, file.fileName, status, size)
 
                     file.fileSize = size
+                else:
+                    if not status.startswith('Update available'):
+                        status = self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status)
+                file.fileStatus = status
+            
+            # implement rest of method  !!!
 
 
 
@@ -301,10 +307,10 @@ class IliasHandling:
 
         if not os.path.isfile(fullPath):
             # request and parse file xml
-            xmlFile = untangle.parse(self.client.service.getFileXML(self.sessionId, ref, 3))
+            xmlFile = xmltodict.parse(self.client.service.getFileXML(self.sessionId, ref, 3))
 
-            #fileName = xmlFile.File.Filename.cdata
-            content = xmlFile.File.Content.cdata
+            #fileName = xmlFile['File']['Filename']
+            content = xmlFile['File']['Content']['#text']
 
             # decode base64
             decoded = base64.b64decode(content)
@@ -323,7 +329,65 @@ class IliasHandling:
 
         return fileStatus
 
-    
+    def getFileGzipOW(self, ref, path, name, fileStatus, size):
+        """
+        Download file as compressed GZIP string and overwrite local
+        """
+        fullPath = ''
+
+        # build full path
+        fullPath = os.path.join(path, name)
+
+        # check if path too long to avoid windows problems
+        if len(fullPath) > 259:
+            fileStatus = 'Path too long!'
+            return fileStatus, size
+
+        if os.path.isfile(fullPath):
+            # request and parse file xml
+            xmlFile = xmltodict.parse(self.client.service.getFileXML(self.sessionId, ref, 3))
+
+            #fileName = xmlFile['File']['Filename']
+            content = xmlFile['File']['Content']['#text']
+            tmpSize = xmlFile['File']['@size']
+
+            if int(tmpSize) < 1049000:
+                size = str(self.helpers.getSizeInKiB(int(tmpSize))) + ' KB'
+            else:
+                size = str(self.helpers.getSizeInMiB(int(tmpSize))) + ' MB'
+
+            # decode base64
+            decoded = base64.b64decode(content)
+
+            # decompress gzip
+            bytesBuffer = io.BytesIO(decoded)
+            gzFile = gzip.GzipFile(fileobj=bytesBuffer)
+            decompressed = gzFile.read()
+
+            # save file
+            with open(fullPath, 'wb') as f:
+                f.write(decompressed)
+                fileStatus = 'New'
+        else:
+            fileStatus = 'Found on disk'
+
+        return fileStatus, size
+
+    def getSingleFile(self, file):
+        """
+        Download a single file
+        """
+        status = ''
+        size = ''
+        status, size = self.getFileGzipOW(int(file.fileId), file.filePath, file.fileName, status, size)
+
+        file.fileStatus = status
+        file.fileSize = size
+
+
+    def testing(self, ref):
+        
+        print()
 
 
 

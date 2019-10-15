@@ -1,7 +1,7 @@
 connection:
   client: FH-Bielefeld
   serverURI: https://nbl.fh-bielefeld.de/login.php?target=&amp;soap_pw=&amp;ext_uid=&amp;cookies=nocookies&amp;client_id=FH-Bielefeld&amp;lang=de
-  user: ariedel2
+  user: 
   wsdl: https://nbl.fh-bielefeld.de/webservice/soap/server.php?wsdl
 courses:
   479495:

@@ -7,6 +7,9 @@ from datetime import datetime
 import untangle
 import os
 import time
+import base64
+import gzip
+import io
 
 class IliasHandling:
     wsdl = ''
@@ -227,7 +230,7 @@ class IliasHandling:
                 if self.config.getOverwriteAll() and status.startswith('Update available'):
                     size = file.fileSize
 
-                    # implement download function   !!!
+                    #self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status, size)
 
                     file.fileSize = size
 
@@ -281,6 +284,47 @@ class IliasHandling:
                     # implement "path too long" message !!!
                     pass
         return path
+
+    def getFileGzip(self, ref, path, name, fileStatus):
+        """
+        Download file as compressed GZIP string
+        """
+        fullPath = ''
+
+        # build full path
+        fullPath = os.path.join(path, name)
+
+        # check if path too long to avoid windows problems
+        if len(fullPath) > 259:
+            fileStatus = 'Path too long!'
+            return fileStatus
+
+        if not os.path.isfile(fullPath):
+            # request and parse file xml
+            xmlFile = untangle.parse(self.client.service.getFileXML(self.sessionId, ref, 3))
+
+            #fileName = xmlFile.File.Filename.cdata
+            content = xmlFile.File.Content.cdata
+
+            # decode base64
+            decoded = base64.b64decode(content)
+
+            # decompress gzip
+            bytesBuffer = io.BytesIO(decoded)
+            gzFile = gzip.GzipFile(fileobj=bytesBuffer)
+            decompressed = gzFile.read()
+
+            # save file
+            with open(fullPath, 'wb') as f:
+                f.write(decompressed)
+                fileStatus = 'New'
+        else:
+            fileStatus = 'Found on disk'
+
+        return fileStatus
+
+    
+
 
 
 class CourseInfo:

@@ -12,8 +12,12 @@ import io
 import xmltodict
 
 class IliasHandling:
-    wsdl = ''
     loggedIn = False
+    syncRunning = False
+    curCourseNum = 0
+    filePercentage = 0
+    coursePercentage = 0
+    coursesDone = False
     config = None
     helpers = None
     client = None
@@ -27,8 +31,7 @@ class IliasHandling:
     def __init__(self):
         self.config = Config()
         self.helpers = Helpers()
-        self.wsdl = self.config.getWsdlUri()
-        self.client = Client(wsdl=self.wsdl)
+        self.client = Client(wsdl=self.config.getWsdlUri())
 
     def iliasLogin(self, user, password):
         """
@@ -238,7 +241,24 @@ class IliasHandling:
                         status = self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status)
                 file.fileStatus = status
             
-            # implement rest of method  !!!
+            if newFile:
+                # increment file count !!!
+
+                file.fileStatus = status
+                file.fileIsVisible = True
+            elif self.config.getShowNew() and (status == 'Not present' or status == 'New' or status == 'Update available!'):
+                # increment file count !!!
+
+                file.FileStatus = status
+                file.FileIsVisible = True
+            elif not self.config.getShowNew():
+                #if status == 'Not present' or status == 'Update available!':
+                    # increment file count !!!
+                    
+                file.fileIsVisible = True
+
+            # insert progress update here   !!!
+            
 
 
 
@@ -416,7 +436,7 @@ class FileInfo:
     fileIsVisible = True
 
     def __init__(   self, 
-                    fileStatus='', 
+                    fileStatus='Missing', 
                     fileName='', 
                     filePath='', 
                     fileDate='', 

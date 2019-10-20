@@ -1,5 +1,5 @@
-from config import Config
-from helpers import Helpers
+from sync2folder.ilias.config import Config
+from sync2folder.ilias.helpers import Helpers
 from zeep import Client
 from zeep import xsd
 from pathlib import Path
@@ -32,6 +32,49 @@ class IliasHandling:
         self.config = Config()
         self.helpers = Helpers()
         self.client = Client(wsdl=self.config.getWsdlUri())
+        self.recoverSession()
+
+    def checkSessionId(self):
+        """
+        Check if session ID is saved
+        """
+        sId = self.config.readSessionId()
+        if sId == '':
+            return False
+        else:
+            return True
+
+    def recoverSession(self):
+        """
+        Check if valid session ID available
+        """
+        if self.loggedIn:
+            return True
+
+        sIdPresent = self.checkSessionId()
+        if sIdPresent:
+            self.sessionId = self.config.readSessionId()
+            try:
+                uId = self.client.service.getUserIdBySid(self.sessionId)
+            except:
+                return False
+            if uId == self.config.getUserId():
+                self.loggedIn = True
+                self.userId = uId
+                return True
+            return False
+
+    def trySessionRecover(self):
+        """
+        Display messages if session could be restored
+        """
+        if self.recoverSession():
+            print('Recovered last ILIAS session.')
+            return True
+        else:
+            print('No last ILIAS session available or last session timed out.')
+            print('Please log in first using <sync2folder login>.')
+            return False
 
     def iliasLogin(self, user, password):
         """
@@ -49,6 +92,8 @@ class IliasHandling:
                     # get session id / log in
                     self.sessionId = self.client.service.loginLDAP(self.config.getClient(), user, password)
                     self.userId = self.client.service.getUserIdBySid(self.sessionId)
+                    self.config.setUserId(self.userId)
+                    self.config.writeSessionId(self.sessionId)
                     self.loggedIn = True
                     return True
                 except:
@@ -66,6 +111,7 @@ class IliasHandling:
         """
         if self.loggedIn:
             self.loggedIn = False
+            self.config.writeSessionId('')
             return self.client.service.logout(self.sessionId)
         else:
             return False
@@ -77,7 +123,8 @@ class IliasHandling:
         self.courseList.clear()
 
         if not self.loggedIn:
-            return
+            if not self.trySessionRecover():
+                return
         
         xmlUserRoles = xmltodict.parse(self.client.service.getUserRoles(self.sessionId, self.userId))
 
@@ -94,10 +141,12 @@ class IliasHandling:
 
     def getCourseNames(self):
         """
-        Collect course names matching the course ids
+        Collect course names matching the course ids, returns courseList
         """
         for course in self.courseList:
             course.courseName = self.getCourseName(course.courseId)
+        
+        return self.courseList
 
     def getCourseName(self, ref):
         """
@@ -403,12 +452,6 @@ class IliasHandling:
 
         file.fileStatus = status
         file.fileSize = size
-
-
-    def testing(self, ref):
-        
-        print()
-
 
 
 class CourseInfo:

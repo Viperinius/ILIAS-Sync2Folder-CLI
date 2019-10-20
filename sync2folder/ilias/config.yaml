@@ -2,10 +2,14 @@ connection:
   client: FH-Bielefeld
   serverURI: https://nbl.fh-bielefeld.de/login.php?target=&amp;soap_pw=&amp;ext_uid=&amp;cookies=nocookies&amp;client_id=FH-Bielefeld&amp;lang=de
   user: 
+  userId: 
   wsdl: https://nbl.fh-bielefeld.de/webservice/soap/server.php?wsdl
 courses:
   479495:
-    name: Blah
+    name: Testtt
+    sync: false
+  532055:
+    sync: true
   596777:
     name: Energietechnik
     sync: true

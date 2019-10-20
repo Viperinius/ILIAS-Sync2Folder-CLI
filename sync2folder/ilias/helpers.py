@@ -1,4 +1,4 @@
-from config import Config
+from sync2folder.ilias.config import Config
 
 class Helpers:
     config = Config()
@@ -77,3 +77,19 @@ class Helpers:
         Convert Byte to Mebibyte
         """
         return '%.1f'%((sizeInByte / 1024) / 1024)
+
+    def gatherCourseNamesSync(self):
+        """
+        Get all own course names and sync status from config and return as dict
+        """
+        names = {}
+        synced = {}
+
+        for course in self.config.yamlConf['courses']:
+            if 'name' in self.config.yamlConf['courses'][course] and self.config.yamlConf['courses'][course]['name'] is not None:
+                names[course] = self.config.yamlConf['courses'][course]['name']
+            
+            if 'sync' in self.config.yamlConf['courses'][course] and self.config.yamlConf['courses'][course]['sync'] is not None:
+                synced[course] = self.config.yamlConf['courses'][course]['sync']
+
+        return names, synced

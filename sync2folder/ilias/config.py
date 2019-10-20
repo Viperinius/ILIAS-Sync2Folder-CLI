@@ -1,15 +1,56 @@
 import yaml
+import os
+
+configFilePath = os.path.dirname(__file__)
 
 class Config:
     yamlConf = ""
 
+    tempFile = '.s2fTmp'
+
     def __init__(self):
-        with open('config.yaml', 'r') as conf:
+        with open(os.path.join(configFilePath, 'config.yaml'), 'r') as conf:
             self.yamlConf = yaml.safe_load(conf)
 
     def updateFile(self):        
-        with open('config.yaml', 'w') as conf:
+        with open(os.path.join(configFilePath, 'config.yaml'), 'w') as conf:
             yaml.dump(self.yamlConf, conf, default_flow_style=False)
+
+    def readSessionId(self):
+        if not os.path.isfile(os.path.join(configFilePath, self.tempFile)):
+            return ''
+        with open(os.path.join(configFilePath, self.tempFile), 'r') as temp:
+            return str(temp.read())
+
+    def writeSessionId(self, sessionId):
+        with open(os.path.join(configFilePath, self.tempFile), 'w') as temp:
+            pass
+        with open(os.path.join(configFilePath, self.tempFile), 'w') as temp:
+            temp.write(sessionId)
+
+    def setFromServerUri(self):
+        """
+        Set WSDL and client ID from server link
+        """
+        uri = self.getServerUri()
+
+        uri = ''
+        if '/login.php' in uri:
+            linkParts = uri.split('client_id=')
+            if len(linkParts) > 1:
+                if '&' in linkParts[1]:
+                    clientId = linkParts[1].split('&')[0]
+                else:
+                    clientId = linkParts[1]
+                self.setClient(clientId)
+            #else:
+                # implement fetching of client id   !!!
+            
+            wsdl = uri.replace('login.php', 'webservice/soap/server.php?wsdl')
+            self.setWsdlUri(wsdl)
+
+        # maybe accept webservice link too?
+        
 
     ########################################################
     #               Connection settings
@@ -34,6 +75,13 @@ class Config:
 
     def setUser(self, user):
         self.yamlConf['connection']['user'] = user
+        self.updateFile()
+
+    def getUserId(self):
+        return self.yamlConf['connection']['userId']
+
+    def setUserId(self, userId):
+        self.yamlConf['connection']['userId'] = userId
         self.updateFile()
 
     def getWsdlUri(self):

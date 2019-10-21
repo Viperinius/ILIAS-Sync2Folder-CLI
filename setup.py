@@ -29,6 +29,7 @@ setup(
             'show-dir-config = sync2folder.commands:ShowDirectorySettings',
             'list-courses = sync2folder.commands:ListCourses',
             'edit-courses = sync2folder.commands:EditCourses',
+            'sync = sync2folder.commands:Sync',
             'login = sync2folder.commands:Login',
             'logout = sync2folder.commands:Logout',
         ],

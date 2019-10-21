@@ -3,6 +3,7 @@ from cliff.lister import Lister
 
 from sync2folder.ilias.iliasHandling import IliasHandling
 from getpass import getpass
+import sync2folder.sync
 
 import logging
 
@@ -171,7 +172,7 @@ class EditCourses(Command):
     def take_action(self, parsed_args):
         print(parsed_args)
         if parsed_args.id is None and (parsed_args.deselect or parsed_args.editname is not None or parsed_args.select):
-            self.app.stdout.write('No course given (use -i or --i to provide one). Exited.\n')
+            self.app.stdout.write('No course given (use -i or --id to provide one). Exited.\n')
             return
 
         if parsed_args.deselect and parsed_args.id is not None:
@@ -190,6 +191,33 @@ class EditCourses(Command):
             self.app.stdout.write('No setting given. Exited.\n')
             return
         self.app.stdout.write('Course settings updated.\n')
+
+class Sync(Command):
+    'Start / Stop synchronising with or without options'
+
+    def get_parser(self, prog_name):
+        parser = super().get_parser(prog_name)
+
+        parser.add_argument('command', help='Use "start" or "stop" to choose what to do')
+
+        groupFiles = parser.add_mutually_exclusive_group()
+        groupFiles.add_argument('-o', '--overwrite', action='store_true', help='Overwrite all updated files')
+        groupFiles.add_argument('-i', '--ignore', action='store_true', help='Ignore all updated files')
+
+        parser.add_argument('-s', '--show', action='store_true', help='Show files ony without downloading them')
+        parser.add_argument('-n', '--new', action='store_true', help='Show only new files')
+        parser.add_argument('-m', '--minimal', action='store_true', help='Hide most file info except name and status')
+        return parser
+
+    def take_action(self, parsed_args):
+        print(parsed_args)
+
+        if parsed_args.command == 'start':
+            sync2folder.sync.startSync(parsed_args, self.app.stdout)
+        elif parsed_args.command == 'stop':
+            sync2folder.sync.stopSync()
+        
+        return
 
 
 class Login(Command):

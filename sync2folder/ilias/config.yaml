@@ -27,7 +27,7 @@ sync:
   overwrite: false
   owIgnore: false
   showNew: false
-  showOnly: false
+  showOnly: true
   syncAll: false
   syncNotification: true
 system:

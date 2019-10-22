@@ -72,23 +72,55 @@ def startSync(optionalArgs, stdout):
     else:
         stdout.write(colReset + bold + tableHeader + colReset)
 
-    import time
+    # ensure course info is present
+    generateCourseList()
 
-    stdout.write(constructRow(False, ['Missing', 'b', 'X:', '11.11.11', '1 KB', 'No']))
-    stdout.write(constructRow(False, ['Missinggggggg', 'a', 'C:', '99.99.99', '1000 TB', 'Yes']))
-    stdout.write(constructRow(False, ['Missing', 'd', 'A:', '32.3.2', '1 MB', 'Yes']))
+    if handler.config.getSyncAll():
+        for course in handler.courseList:
+            fileCount = handler.getCourseFiles(course.courseId)
+            for file in handler.fileList:
+                curFile = handler.downloadFile(file)
+                rowData = [
+                    curFile.fileStatus, 
+                    curFile.fileName, 
+                    curFile.filePath,
+                    curFile.fileDate,
+                    curFile.fileSize,
+                    curFile.fileIgnore
+                ]
+                stdout.write(constructRow(optionalArgs.minimal, rowData))
+    else:
+        for course in handler.courseList:
+            if handler.config.getCourseSync(course.courseId):
+                fileCount = handler.getCourseFiles(course.courseId)
+                for file in handler.fileList:
+                    curFile = handler.downloadFile(file)
+                    rowData = [
+                        curFile.fileStatus, 
+                        curFile.fileName, 
+                        curFile.filePath,
+                        curFile.fileDate,
+                        curFile.fileSize,
+                        curFile.fileIgnore
+                    ]
+                    stdout.write(constructRow(optionalArgs.minimal, rowData))
 
-    time.sleep(1)
 
-    stdout.write('\033[3F' + constructRow(False, ['New', 'b', 'X:', '11.11.11', '1 KB', 'No'], fgGreen))
-    time.sleep(1)
-    stdout.write(constructRow(False, ['Error', 'a', 'C:', '99.99.99', '1000 TB', 'Yes'], fgRed))
-    time.sleep(1)
-    stdout.write(constructRow(False, ['Update available', 'd', 'A:', '32.3.2', '1 MB', 'Yes'], fgCyan))
+
+    #stdout.write(constructRow(False, ['Missing', 'b', 'X:', '11.11.11', '1 KB', 'No']))
+    #stdout.write(constructRow(False, ['Missinggggggg', 'a', 'C:', '99.99.99', '1000 TB', 'Yes']))
+    #stdout.write(constructRow(False, ['Missing', 'd', 'A:', '32.3.2', '1 MB', 'Yes']))
+
+
+    #stdout.write('\033[3F' + constructRow(False, ['New', 'b', 'X:', '11.11.11', '1 KB', 'No'], fgGreen))
+
+    #stdout.write(constructRow(False, ['Error', 'a', 'C:', '99.99.99', '1000 TB', 'Yes'], fgRed))
+
+    #stdout.write(constructRow(False, ['Update available', 'd', 'A:', '32.3.2', '1 MB', 'Yes'], fgCyan))
     #stdout.write('\033[B')
 
 
-    stdout.write('\033[F')
+    #stdout.write('\033[F')
     if optionalArgs.minimal:
         stdout.write(colReset + bold + tableFooterMinimal + colReset)
     else:
@@ -99,3 +131,29 @@ def stopSync():
     pass
 
 
+def generateCourseList():
+    'Get Course info and merge lists into one course list'
+
+    handler.getCourseIds()
+    rawCourses = handler.getCourseNames()
+    
+    if rawCourses is None or not rawCourses:
+        return []
+
+    ownNames, synced = handler.helpers.gatherCourseNamesSync()
+
+    courses = []
+
+    for course in rawCourses:
+        courses.append([course.courseId, course.courseName, '', course.courseChecked])
+        if int(course.courseId) in ownNames:
+            courses[-1][2] = ownNames[int(course.courseId)]
+            course.courseOwnName = ownNames[int(course.courseId)]
+        
+        if int(course.courseId) in synced:
+            courses[-1][3] = synced[int(course.courseId)]
+            course.courseChecked = synced[int(course.courseId)]
+
+    handler.courseList = rawCourses
+    
+    return courses

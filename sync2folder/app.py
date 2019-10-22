@@ -5,7 +5,7 @@ from cliff.app import App
 from cliff.command import Command
 from cliff.commandmanager import CommandManager
 
-asciiLogo = '''
+asciiLogo = r'''
  ___ _     ___    _    ____       ____                   ____  _____     _     _           
 |_ _| |   |_ _|  / \  / ___|     / ___| _   _ _ __   ___|___ \|  ___|__ | | __| | ___ _ __ 
  | || |    | |  / _ \ \___ \ ____\___ \| | | | '_ \ / __| __) | |_ / _ \| |/ _` |/ _ \ '__|

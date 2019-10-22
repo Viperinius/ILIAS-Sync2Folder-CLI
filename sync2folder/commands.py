@@ -134,21 +134,7 @@ class ListCourses(Lister):
     ]
 
     def take_action(self, parsed_args):
-        handler.getCourseIds()
-        courses = handler.getCourseNames()
-        
-        if courses is None or not courses:
-            return ('','')
-
-        ownNames, synced = handler.helpers.gatherCourseNamesSync()
-
-        for course in courses:
-            self.table.append([course.courseId, course.courseName, '', course.courseChecked])
-            if int(course.courseId) in ownNames:
-                self.table[-1][2] = ownNames[int(course.courseId)]
-            
-            if int(course.courseId) in synced:
-                self.table[-1][3] = synced[int(course.courseId)]
+        self.table.extend(sync2folder.sync.generateCourseList())
 
         return self.table[0], self.table[1:]
 
@@ -211,6 +197,11 @@ class Sync(Command):
 
     def take_action(self, parsed_args):
         print(parsed_args)
+
+        handler.config.setOverwriteNone(parsed_args.ignore)
+        handler.config.setShowNew(parsed_args.new)
+        handler.config.setOverwriteAll(parsed_args.overwrite)
+        handler.config.setShowOnly(parsed_args.show)
 
         if parsed_args.command == 'start':
             sync2folder.sync.startSync(parsed_args, self.app.stdout)

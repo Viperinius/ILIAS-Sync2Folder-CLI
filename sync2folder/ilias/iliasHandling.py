@@ -14,6 +14,7 @@ import xmltodict
 class IliasHandling:
     loggedIn = False
     syncRunning = False
+    cancelPending = False
     curCourseNum = 0
     filePercentage = 0
     coursePercentage = 0
@@ -210,7 +211,8 @@ class IliasHandling:
 
         fileCount = len(self.fileList)
         # start file download
-        self.downloadFiles(ref, fileCount)
+        #self.downloadFiles(ref, fileCount)
+        return fileCount
 
     def downloadFiles(self, ref, fileCount):
         """
@@ -218,97 +220,99 @@ class IliasHandling:
         """
 
         for file in self.fileList:
-            # insert progress update here   !!!
+            file = self.downloadFile(file)
+            
+    def downloadFile(self, file):
+        # insert progress update here   !!!
 
-            status = 'Not present'
+        status = 'Not present'
+
+        file.fileStatus = status
+        file.fileIsVisible = False
+
+        # create path directories
+        path = file.filePath
+        if not self.config.getShowOnly():
+            # files should be downloaded, create directories
+            path = self.createDirectories(path, ref, False)
+        else:
+            path = self.createDirectories(path, ref, True)
+        file.filePath = path
+
+        # check file status
+        if os.path.isfile(os.path.join(file.filePath, file.fileName)):
+            status = 'Found on disk'
+            file.fileStatus = status
+
+            # check if file has been updated
+            if int(file.fileVersion) > 1:
+                localLastModified = time.strftime("%Y-%m-%d %T", time.localtime(os.path.getmtime('config.yaml')))
+                fileLastModifyDate = file.fileLastUpdate
+
+                delta = datetime.strptime(localLastModified, "%Y-%m-%d %H:%M:%S").timestamp() - datetime.strptime(fileLastModifyDate, "%Y-%m-%d %H:%M:%S").timestamp()
+
+                if delta < 0:
+                    # ilias version newer
+                    if self.config.getFileIgnore(file.fileId) or self.config.getOverwriteNone():
+                        status = 'Update available'
+                    else:
+                        status = 'Update available!'
+                    file.fileStatus = status
+        
+        # check file ignore rule
+        if self.config.getFileIgnore(file.fileId) == file.fileId or self.config.getOverwriteNone():
+            file.fileIgnore = "Ignored"
+        else:
+            file.fileIgnore = "Not ignored"
+
+        # format size to be human readable
+        size = int(file.fileSize)
+        if size < 1049000:
+            # is smaller than 1 MB
+            file.fileSize = str(self.helpers.getSizeInKiB(size)) + " KB"
+        else:
+            file.fileSize = str(self.helpers.getSizeInMiB(size)) + " MB"
+
+        # insert progress update here   !!!
+
+        newFile = False
+        if not self.config.getShowOnly():
+            # download file
+            if not os.path.isfile(os.path.join(file.filePath, file.fileName)):
+                status = 'Loading...'
+                newFile = True
+                file.fileStatus = status
+                file.fileIsVisible = True
+
+            if self.config.getOverwriteAll() and status.startswith('Update available'):
+                size = file.fileSize
+
+                status, size = self.getFileGzipOW(int(file.fileId), file.filePath, file.fileName, status, size)
+
+                file.fileSize = size
+            else:
+                if not status.startswith('Update available'):
+                    status = self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status)
+            file.fileStatus = status
+        
+        if newFile:
+            # increment file count !!!
 
             file.fileStatus = status
-            file.fileIsVisible = False
+            file.fileIsVisible = True
+        elif self.config.getShowNew() and (status == 'Not present' or status == 'New' or status == 'Update available!'):
+            # increment file count !!!
 
-            # create path directories
-            path = file.filePath
-            if not self.config.getShowOnly():
-                # files should be downloaded, create directories
-                path = self.createDirectories(path, ref, False)
-            else:
-                path = self.createDirectories(path, ref, True)
-            file.filePath = path
-
-            # check file status
-            if os.path.isfile(os.path.join(file.filePath, file.fileName)):
-                status = 'Found on disk'
-                file.fileStatus = status
-
-                # check if file has been updated
-                if int(file.fileVersion) > 1:
-                    localLastModified = time.strftime("%Y-%m-%d %T", time.localtime(os.path.getmtime('config.yaml')))
-                    fileLastModifyDate = file.fileLastUpdate
-
-                    delta = datetime.strptime(localLastModified, "%Y-%m-%d %H:%M:%S").timestamp() - datetime.strptime(fileLastModifyDate, "%Y-%m-%d %H:%M:%S").timestamp()
-
-                    if delta < 0:
-                        # ilias version newer
-                        if self.config.getFileIgnore(file.fileId) or self.config.getOverwriteNone():
-                            status = 'Update available'
-                        else:
-                            status = 'Update available!'
-                        file.fileStatus = status
-            
-            # check file ignore rule
-            if self.config.getFileIgnore(file.fileId) == file.fileId or self.config.getOverwriteNone():
-                file.fileIgnore = "Ignored"
-            else:
-                file.fileIgnore = "Not ignored"
-
-            # format size to be human readable
-            size = int(file.fileSize)
-            if size < 1049000:
-                # is smaller than 1 MB
-                file.fileSize = str(self.helpers.getSizeInKiB(size)) + " KB"
-            else:
-                file.fileSize = str(self.helpers.getSizeInMiB(size)) + " MB"
-
-            # insert progress update here   !!!
-
-            newFile = False
-            if not self.config.getShowOnly():
-                # download file
-                if not os.path.isfile(os.path.join(file.filePath, file.fileName)):
-                    status = 'Loading...'
-                    newFile = True
-                    file.fileStatus = status
-                    file.fileIsVisible = True
-
-                if self.config.getOverwriteAll() and status.startswith('Update available'):
-                    size = file.fileSize
-
-                    status, size = self.getFileGzipOW(int(file.fileId), file.filePath, file.fileName, status, size)
-
-                    file.fileSize = size
-                else:
-                    if not status.startswith('Update available'):
-                        status = self.getFileGzip(int(file.fileId), file.filePath, file.fileName, status)
-                file.fileStatus = status
-            
-            if newFile:
+            file.FileStatus = status
+            file.FileIsVisible = True
+        elif not self.config.getShowNew():
+            #if status == 'Not present' or status == 'Update available!':
                 # increment file count !!!
+                
+            file.fileIsVisible = True
 
-                file.fileStatus = status
-                file.fileIsVisible = True
-            elif self.config.getShowNew() and (status == 'Not present' or status == 'New' or status == 'Update available!'):
-                # increment file count !!!
-
-                file.FileStatus = status
-                file.FileIsVisible = True
-            elif not self.config.getShowNew():
-                #if status == 'Not present' or status == 'Update available!':
-                    # increment file count !!!
-                    
-                file.fileIsVisible = True
-
-            # insert progress update here   !!!
-            
-
+        # insert progress update here   !!!
+        return file
 
 
     def createDirectories(self, path, ref, buildOnlyPath):

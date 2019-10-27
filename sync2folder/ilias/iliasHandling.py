@@ -1,6 +1,6 @@
 from sync2folder.ilias.config import Config
 from sync2folder.ilias.helpers import Helpers
-from zeep import Client
+from zeep import Client, Settings
 from zeep import xsd
 from pathlib import Path
 from datetime import datetime
@@ -32,7 +32,8 @@ class IliasHandling:
     def __init__(self):
         self.config = Config()
         self.helpers = Helpers()
-        self.client = Client(wsdl=self.config.getWsdlUri())
+        settings = Settings(xml_huge_tree=True)
+        self.client = Client(wsdl=self.config.getWsdlUri(), settings=settings)
         self.recoverSession()
 
     def checkSessionId(self):
@@ -220,9 +221,12 @@ class IliasHandling:
         """
 
         for file in self.fileList:
-            file = self.downloadFile(file)
+            file = self.downloadFile(file, ref)
             
-    def downloadFile(self, file):
+    def downloadFile(self, file, course):
+        """
+        Download given file from course
+        """
         # insert progress update here   !!!
 
         status = 'Not present'
@@ -234,9 +238,9 @@ class IliasHandling:
         path = file.filePath
         if not self.config.getShowOnly():
             # files should be downloaded, create directories
-            path = self.createDirectories(path, ref, False)
+            path = self.createDirectories(path, course.courseId, False)
         else:
-            path = self.createDirectories(path, ref, True)
+            path = self.createDirectories(path, course.courseId, True)
         file.filePath = path
 
         # check file status
@@ -246,7 +250,7 @@ class IliasHandling:
 
             # check if file has been updated
             if int(file.fileVersion) > 1:
-                localLastModified = time.strftime("%Y-%m-%d %T", time.localtime(os.path.getmtime('config.yaml')))
+                localLastModified = time.strftime("%Y-%m-%d %T", time.localtime(os.path.getmtime(os.path.join(file.filePath, file.fileName))))
                 fileLastModifyDate = file.fileLastUpdate
 
                 delta = datetime.strptime(localLastModified, "%Y-%m-%d %H:%M:%S").timestamp() - datetime.strptime(fileLastModifyDate, "%Y-%m-%d %H:%M:%S").timestamp()
@@ -264,6 +268,7 @@ class IliasHandling:
             file.fileIgnore = "Ignored"
         else:
             file.fileIgnore = "Not ignored"
+
 
         # format size to be human readable
         size = int(file.fileSize)
@@ -297,19 +302,21 @@ class IliasHandling:
         
         if newFile:
             # increment file count !!!
-
+            
             file.fileStatus = status
             file.fileIsVisible = True
         elif self.config.getShowNew() and (status == 'Not present' or status == 'New' or status == 'Update available!'):
             # increment file count !!!
-
+            
             file.FileStatus = status
             file.FileIsVisible = True
         elif not self.config.getShowNew():
             #if status == 'Not present' or status == 'Update available!':
                 # increment file count !!!
-                
+            
             file.fileIsVisible = True
+        else:
+            return ''
 
         # insert progress update here   !!!
         return file
@@ -329,7 +336,7 @@ class IliasHandling:
             structTemplate = self.config.getStructTemplate()
 
             if self.config.getUseOwnNames():
-                ownName = self.config.getCourseName(ref)
+                ownName = self.config.getCourseName(int(ref))
                 if ownName != '__NO_VAL__' and ownName != '':
                     tmpPath = path.replace(courseName, ownName)
                 else:
@@ -345,7 +352,7 @@ class IliasHandling:
                     path = os.path.join(structTemplate, tmpPath)
         elif not self.config.getUseOwnStructure():
             if self.config.getUseOwnNames():
-                ownName = self.config.getCourseName(ref)
+                ownName = self.config.getCourseName(int(ref))
                 if ownName != '__NO_VAL__' and ownName != '':
                     path = path.replace(courseName, ownName)
         

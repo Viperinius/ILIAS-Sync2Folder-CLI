@@ -9,11 +9,14 @@ class Config:
     tempFile = '.s2fTmp'
 
     def __init__(self):
-        with open(os.path.join(configFilePath, 'config.yaml'), 'r') as conf:
+        self.reloadFile()
+
+    def reloadFile(self):
+        with open(os.path.join(configFilePath, 'config.yaml'), 'r', encoding='utf8') as conf:
             self.yamlConf = yaml.safe_load(conf)
 
     def updateFile(self):        
-        with open(os.path.join(configFilePath, 'config.yaml'), 'w') as conf:
+        with open(os.path.join(configFilePath, 'config.yaml'), 'w', encoding='utf8') as conf:
             yaml.dump(self.yamlConf, conf, default_flow_style=False)
 
     def readSessionId(self):
@@ -32,6 +35,7 @@ class Config:
         """
         Set WSDL and client ID from server link
         """
+        self.reloadFile()
         uri = self.getServerUri()
 
         uri = ''
@@ -57,6 +61,7 @@ class Config:
     ########################################################
 
     def getClient(self):
+        self.reloadFile()
         return self.yamlConf['connection']['client']
 
     def setClient(self, client):
@@ -64,6 +69,7 @@ class Config:
         self.updateFile()
 
     def getServerUri(self):
+        self.reloadFile()
         return self.yamlConf['connection']['serverURI']
 
     def setServerUri(self, server):
@@ -71,6 +77,7 @@ class Config:
         self.updateFile()
 
     def getUser(self):
+        self.reloadFile()
         return self.yamlConf['connection']['user']
 
     def setUser(self, user):
@@ -78,6 +85,7 @@ class Config:
         self.updateFile()
 
     def getUserId(self):
+        self.reloadFile()
         return self.yamlConf['connection']['userId']
 
     def setUserId(self, userId):
@@ -85,6 +93,7 @@ class Config:
         self.updateFile()
 
     def getWsdlUri(self):
+        self.reloadFile()
         return self.yamlConf['connection']['wsdl']
 
     def setWsdlUri(self, wsdl):
@@ -96,6 +105,7 @@ class Config:
     ########################################################
 
     def getCourseInfo(self, course):
+        self.reloadFile()
         if course in self.yamlConf['courses']:
             return self.yamlConf['courses'][course]
         else:
@@ -119,6 +129,7 @@ class Config:
         self.updateFile()
 
     def getCourseSync(self, course):
+        self.reloadFile()
         if course in self.yamlConf['courses']:
             return self.yamlConf['courses'][course]['sync']
         else:
@@ -130,8 +141,11 @@ class Config:
             self.updateFile()
 
     def getCourseName(self, course):
+        self.reloadFile()
         if course in self.yamlConf['courses']:
-            return self.yamlConf['courses'][course]['name']
+            if 'name' in self.yamlConf['courses'][course]:
+                return self.yamlConf['courses'][course]['name']
+            return ''
         else:
             return ''
 
@@ -146,6 +160,7 @@ class Config:
     ########################################################
 
     def getPath(self):
+        self.reloadFile()
         return self.yamlConf['localDir']['path']
 
     def setPath(self, path):
@@ -153,6 +168,7 @@ class Config:
         self.updateFile()
 
     def getStructTemplate(self):
+        self.reloadFile()
         return self.yamlConf['localDir']['structureTemplate']
 
     def setStructTemplate(self, template):
@@ -160,6 +176,7 @@ class Config:
         self.updateFile()
 
     def getUseOwnNames(self):
+        self.reloadFile()
         return self.yamlConf['localDir']['useOwnNames']
     
     def setUseOwnNames(self, boolean):
@@ -167,6 +184,7 @@ class Config:
         self.updateFile()
 
     def getUseOwnStructure(self):
+        self.reloadFile()
         return self.yamlConf['localDir']['useOwnStructure']
 
     def setUseOwnStructure(self, boolean):
@@ -174,6 +192,7 @@ class Config:
         self.updateFile()
 
     def getUseYearInStructure(self):
+        self.reloadFile()
         return self.yamlConf['localDir']['useYear']
 
     def setUseYearInStructure(self, boolean):
@@ -185,6 +204,7 @@ class Config:
     ########################################################
 
     def getOverwriteAll(self):
+        self.reloadFile()
         return self.yamlConf['sync']['overwrite']
 
     def setOverwriteAll(self, boolean):
@@ -192,6 +212,7 @@ class Config:
         self.updateFile()
 
     def getOverwriteNone(self):
+        self.reloadFile()
         return self.yamlConf['sync']['owIgnore']
 
     def setOverwriteNone(self, boolean):
@@ -199,6 +220,7 @@ class Config:
         self.updateFile()
 
     def getFileIgnore(self, fileId):
+        self.reloadFile()
         if fileId in self.yamlConf['sync']['ignoredFiles']:
             return self.yamlConf['sync']['ignoredFiles'][fileId]
         else:
@@ -209,6 +231,7 @@ class Config:
         self.updateFile()
 
     def getShowNew(self):
+        self.reloadFile()
         return self.yamlConf['sync']['showNew']
 
     def setShowNew(self, boolean):
@@ -216,6 +239,7 @@ class Config:
         self.updateFile()
 
     def getShowOnly(self):
+        self.reloadFile()
         return self.yamlConf['sync']['showOnly']
 
     def setShowOnly(self, boolean):
@@ -223,6 +247,7 @@ class Config:
         self.updateFile()
 
     def getSyncAll(self):
+        self.reloadFile()
         return self.yamlConf['sync']['syncAll']
 
     def setSyncAll(self, boolean):
@@ -230,6 +255,7 @@ class Config:
         self.updateFile()
 
     def getSyncNotify(self):
+        self.reloadFile()
         return self.yamlConf['sync']['syncNotification']
 
     def setSyncNotify(self, boolean):
@@ -241,6 +267,7 @@ class Config:
     ########################################################
 
     def getLang(self):
+        self.reloadFile()
         return self.yamlConf['system']['lang']
 
     def setLang(self, lang):
@@ -248,6 +275,7 @@ class Config:
         self.updateFile()
     
     def getTheme(self):
+        self.reloadFile()
         return self.yamlConf['system']['theme']
 
     def setTheme(self, theme):
@@ -255,6 +283,7 @@ class Config:
         self.updateFile()
 
     def getTrayIcon(self):
+        self.reloadFile()
         return self.yamlConf['system']['trayicon']
 
     def setTrayIcon(self, boolean):
@@ -262,6 +291,7 @@ class Config:
         self.updateFile()
 
     def getUpdateCheck(self):
+        self.reloadFile()
         return self.yamlConf['system']['updateCheck']
 
     def setUpdateCheck(self, boolean):

@@ -196,8 +196,6 @@ class Sync(Command):
         return parser
 
     def take_action(self, parsed_args):
-        print(parsed_args)
-
         handler.config.setOverwriteNone(parsed_args.ignore)
         handler.config.setShowNew(parsed_args.new)
         handler.config.setOverwriteAll(parsed_args.overwrite)

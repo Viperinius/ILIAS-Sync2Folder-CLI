@@ -2,7 +2,7 @@
 Command line version of ILIAS-Sync2Folder
 
 ## *Notice*
-This is still in early development and not really functional yet.
+This is still in early development and not fully functional yet.
 
 ## How to start the CLI after cloning
 Open a virtual environment for python3
@@ -23,9 +23,9 @@ Both again (in your cloned directory):
 $ pip install cliff
 $ pip install -e .
 ```
-You can use the programme then:
+You can get started by typing:
 ```sh
-$ sync2folder <...>
+$ sync2folder -h
 ```
 
 

@@ -14,30 +14,30 @@ fgRed = '\33[31m'
 fgCyan = '\033[36m'
 
 tableHeader = '''
-+---------------+-----------------------------------+-------------------------------------------+------------+-----------+-----------------+
-| Status        | File Name                         | Path                                      | Date       | Size      | Updates ignored |
-+---------------+-----------------------------------+-------------------------------------------+------------+-----------+-----------------+
++-----------------+-----------------------------------+-------------------------------------------+--------------+------------+-----------------+
+| Status          | File Name                         | Path                                      | Date         | Size       | Updates ignored |
++-----------------+-----------------------------------+-------------------------------------------+--------------+------------+-----------------+
 '''
 tableHeaderMinimal = '''
-+---------------+-----------------------------------+
-| Status        | File Name                         |
-+---------------+-----------------------------------+
++-----------------+-----------------------------------+
+| Status          | File Name                         |
++-----------------+-----------------------------------+
 '''
 tableFooter = '''
-+---------------+-----------------------------------+-------------------------------------------+------------+-----------+-----------------+
++-----------------+-----------------------------------+-------------------------------------------+--------------+------------+-----------------+
 '''
 tableFooterMinimal = '''
-+---------------+-----------------------------------+
++-----------------+-----------------------------------+
 '''
 
 def constructRow(minimal, values, statusCol=colReset):
     'Generate table row from given data'
     # widths
-    statusMax = 15
+    statusMax = 17
     nameMax = 35
     pathMax = 43
-    dateMax = 12
-    sizeMax = 11
+    dateMax = 14
+    sizeMax = 12
     ignoredMax = 17
 
 
@@ -79,7 +79,9 @@ def startSync(optionalArgs, stdout):
         for course in handler.courseList:
             fileCount = handler.getCourseFiles(course.courseId)
             for file in handler.fileList:
-                curFile = handler.downloadFile(file)
+                curFile = handler.downloadFile(file, course)
+                if curFile == '':
+                    continue
                 rowData = [
                     curFile.fileStatus, 
                     curFile.fileName, 
@@ -91,19 +93,20 @@ def startSync(optionalArgs, stdout):
                 stdout.write(constructRow(optionalArgs.minimal, rowData))
     else:
         for course in handler.courseList:
-            if handler.config.getCourseSync(course.courseId):
+            if handler.config.getCourseSync(int(course.courseId)):
                 fileCount = handler.getCourseFiles(course.courseId)
                 for file in handler.fileList:
-                    curFile = handler.downloadFile(file)
-                    rowData = [
-                        curFile.fileStatus, 
-                        curFile.fileName, 
-                        curFile.filePath,
-                        curFile.fileDate,
-                        curFile.fileSize,
-                        curFile.fileIgnore
-                    ]
-                    stdout.write(constructRow(optionalArgs.minimal, rowData))
+                    curFile = handler.downloadFile(file, course)
+                    if not curFile == '':
+                        rowData = [
+                            curFile.fileStatus, 
+                            curFile.fileName, 
+                            curFile.filePath,
+                            curFile.fileDate,
+                            curFile.fileSize,
+                            curFile.fileIgnore
+                        ]
+                        stdout.write(constructRow(optionalArgs.minimal, rowData))
 
 
 
@@ -120,7 +123,7 @@ def startSync(optionalArgs, stdout):
     #stdout.write('\033[B')
 
 
-    #stdout.write('\033[F')
+    stdout.write('\033[F')
     if optionalArgs.minimal:
         stdout.write(colReset + bold + tableFooterMinimal + colReset)
     else:

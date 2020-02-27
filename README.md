@@ -1,9 +1,6 @@
 # ILIAS-Sync2Folder-CLI
 Command line version of ILIAS-Sync2Folder
 
-## *Notice*
-This is still in early development and not fully functional yet.
-
 ## How to start the CLI after cloning
 Open a virtual environment for python3
 ```sh
